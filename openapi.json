@@ -1,0 +1,748 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "InstNews Stock Market News API",
+    "version": "1.0.0",
+    "description": "Real-time stock market news as JSON, aggregated from financial RSS newswires, SEC EDGAR 8-K filings, the Benzinga newswire and social sources, with AI sentiment, duplicate detection and ticker mapping. Anonymous requests get the Free tier; send `X-API-Key` (Pro/Max) or a Bearer token to unlock your tier. Free: 50 items/req, 30 req/min, 7-day history, no API key. Pro ($29.99/mo): 200 items/req, 300 req/min, 1-year history. Max ($89.99/mo): 500 items/req, 1,000 req/min, 5-year history.",
+    "termsOfService": "https://www.instnews.net/terms",
+    "contact": {
+      "name": "InstNews",
+      "url": "https://www.instnews.net"
+    }
+  },
+  "externalDocs": {
+    "description": "API reference",
+    "url": "https://www.instnews.net/docs/api-reference"
+  },
+  "servers": [
+    {
+      "url": "https://www.instnews.net"
+    }
+  ],
+  "security": [
+    {},
+    {
+      "ApiKeyAuth": []
+    },
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "News"
+    },
+    {
+      "name": "Metadata"
+    },
+    {
+      "name": "Account"
+    }
+  ],
+  "paths": {
+    "/api/news": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "operationId": "listNews",
+        "summary": "List news items, newest first",
+        "description": "Returns news items ordered by publication time (newest first). Fields are shaped by tier — see the NewsItem schema. Free: 50 items/req, 30 req/min, 7-day history, no API key. Pro ($29.99/mo): 200 items/req, 300 req/min, 1-year history. Max ($89.99/mo): 500 items/req, 1,000 req/min, 5-year history. Invalid parameter values are coerced or ignored rather than rejected, and tier-gated parameters (from/to, tradable, hide_dup) silently no-op for tiers without the feature — the endpoint never returns 400 or 403.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of items. Capped at the tier maximum (Free 50, Pro 200, Max 500). When `from`/`to` is set on Pro/Max the cap rises to 5x the tier maximum (hard cap 2,000).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "description": "Filter by a single source name (see /api/sources). `all` = no filter.",
+            "schema": {
+              "type": "string",
+              "default": "all"
+            }
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated source names (up to 100). An explicitly empty value (`sources=`) returns no items.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "CNBC,EDGAR_8K"
+          },
+          {
+            "name": "source_type",
+            "in": "query",
+            "required": false,
+            "description": "`social` = X/Twitter and Truth Social accounts; `rss` = every non-social source; `all` = no filter.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "social",
+                "rss"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "sentiment",
+            "in": "query",
+            "required": false,
+            "description": "Filter by sentiment label. Available on every tier (the score itself is only returned on Pro/Max).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "bullish",
+                "bearish",
+                "neutral"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keyword search in title and summary.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of a date range (ISO 8601). Pro and Max only; ignored on Free.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-01"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of a date range (ISO 8601; a bare YYYY-MM-DD includes the whole day). Pro and Max only; ignored on Free.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-15"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: only items with id lower than this (older page). Pass the previous response's `next_before`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: only items with id higher than this (new arrivals since your last poll).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tickers",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated tickers (up to 100, case-insensitive) matched against each item's `target_asset`. All tiers.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "NVDA,AMD"
+          },
+          {
+            "name": "tradable",
+            "in": "query",
+            "required": false,
+            "description": "`1`/`true` returns only items the AI marked tradeable. Max only; silently ignored on other tiers.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "hide_dup",
+            "in": "query",
+            "required": false,
+            "description": "`1`/`true` drops items flagged as duplicates. Pro and Max only; silently ignored on Free.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "true"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "News items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/news/stream": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "operationId": "streamNews",
+        "summary": "Server-Sent Events push of analyzed items",
+        "description": "Streams `text/event-stream` frames as items' AI analysis lands. Every tier can connect; each event's `data.data` is shaped with the same per-tier rules as /api/news. Frames: `id: <seq>`, `event: verdict | priced_in | cursor`, `data: <JSON StreamEnvelope>`; idle heartbeats are comment lines `: hb <unix time>` about every 15 s. The server closes each stream after a bounded lifetime (600 s by default) — reconnect with `since_seq` set to the last id received.",
+        "parameters": [
+          {
+            "name": "since_seq",
+            "in": "query",
+            "required": false,
+            "description": "Resume cursor. A number replays every event after that sequence, then streams live. `latest` (or omitted) starts at the live tail and first emits a `cursor` event with `{\"seq\": N}`.",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "latest"
+                  ]
+                }
+              ],
+              "default": "latest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event stream. Each `data:` line is a StreamEnvelope (or `{\"seq\": N}` for `cursor` events).",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "id: 1234\nevent: verdict\ndata: {\"seq\": 1234, \"event_type\": \"verdict\", \"emitted_at\": \"2026-10-18T14:30:05+00:00\", \"data\": {\"news_id\": 98765, \"title\": \"...\"}}\n\n"
+              }
+            }
+          },
+          "404": {
+            "description": "Streaming disabled on this deployment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "All stream slots are busy; retry after the `Retry-After` seconds or fall back to polling /api/news?after=.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "listSources",
+        "summary": "List news sources with item counts",
+        "responses": {
+          "200": {
+            "description": "Sources.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcesResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "getStats",
+        "summary": "Aggregated feed statistics",
+        "description": "`by_sentiment` and `avg_sentiment_score` are only included on Pro and Max.",
+        "responses": {
+          "200": {
+            "description": "Statistics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/auth/tier": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "getTier",
+        "summary": "Current tier, feature flags and limits",
+        "description": "Works for anonymous callers (returns the Free tier).",
+        "responses": {
+          "200": {
+            "description": "Tier info.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TierInfo"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key created in the account dashboard (Pro and Max)."
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Signed-in session token (used by the web app)."
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request (invalid parameters).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required. Public endpoints do not return 401: requests with missing or invalid credentials are served as the Free tier.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Feature not available on your tier.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded (Free 30, Pro 300, Max 1,000 requests per minute).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "NewsResponse": {
+        "type": "object",
+        "required": [
+          "count",
+          "items",
+          "next_before"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsItem"
+            }
+          },
+          "next_before": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Id of the last item; pass as `before` for the next older page."
+          }
+        }
+      },
+      "NewsItem": {
+        "type": "object",
+        "description": "A news item. Fields not available to the caller's tier are omitted, not nulled.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique item id (cursor for before/after). All tiers."
+          },
+          "title": {
+            "type": "string",
+            "description": "Headline. All tiers."
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the original article. All tiers."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source name (see /api/sources). All tiers."
+          },
+          "published": {
+            "type": "string",
+            "description": "Publication time, ISO 8601. All tiers."
+          },
+          "fetched_at": {
+            "type": "string",
+            "description": "Ingestion time, ISO 8601. All tiers."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Article excerpt, max 500 chars. All tiers."
+          },
+          "tags": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "All tiers."
+          },
+          "ai_analyzed": {
+            "type": "boolean",
+            "description": "Whether AI analysis has completed. All tiers."
+          },
+          "analyzed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When AI analysis completed, ISO 8601. All tiers."
+          },
+          "event_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Groups items reporting the same event. All tiers."
+          },
+          "target_asset": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The one ticker the item is about, or null. All tiers."
+          },
+          "asset_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Asset class of target_asset (e.g. STOCK). All tiers."
+          },
+          "sentiment_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -1,
+            "maximum": 1,
+            "description": "AI sentiment from -1.0 (bearish) to 1.0 (bullish). Pro and Max."
+          },
+          "sentiment_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "bullish",
+              "bearish",
+              "neutral",
+              null
+            ],
+            "description": "Pro and Max."
+          },
+          "duplicate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "1 if a duplicate of an earlier item, 0 if original. Pro and Max."
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "AI confidence in the ticker call (0-1). Max only."
+          },
+          "risk_level": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "AI risk assessment. Max only."
+          },
+          "tradeable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the AI considers the item actionable. Max only."
+          },
+          "reasoning": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Short AI rationale for the ticker call. Max only."
+          },
+          "priced_in": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Pre-news price run-up score. Max only."
+          },
+          "priced_in_detail": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Components of the priced-in score. Max only."
+          },
+          "priced_in_checked": {
+            "type": "boolean",
+            "description": "Whether the priced-in check has run. Max only."
+          }
+        }
+      },
+      "StreamEnvelope": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "description": "Event sequence (same as the SSE id)."
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "verdict",
+              "priced_in"
+            ]
+          },
+          "emitted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601."
+          },
+          "data": {
+            "type": "object",
+            "description": "Snapshot of the item (news_id, title, link, source, published, fetched_at, analyzed_at, summary, target_asset, asset_type, event_key, plus tier-gated fields as in NewsItem)."
+          }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_type": {
+            "type": "string",
+            "description": "e.g. rss, social, earnings."
+          },
+          "last_fetch_items": {
+            "type": "integer"
+          },
+          "total_items": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SourcesResponse": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "earnings_companies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ticker": {
+                  "type": "string"
+                },
+                "total_items": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {
+          "total_items": {
+            "type": "integer"
+          },
+          "by_source": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "last_refresh": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "feed_count": {
+            "type": "integer"
+          },
+          "by_sentiment": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Pro and Max."
+          },
+          "avg_sentiment_score": {
+            "type": "number",
+            "description": "Pro and Max."
+          }
+        }
+      },
+      "TierInfo": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro",
+              "max"
+            ]
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  }
+}
