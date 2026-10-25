@@ -1,8 +1,17 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-full-dark.svg">
-    <img src="assets/logo-full.svg" alt="InstNews" width="340">
-  </picture>
+  <a href="https://www.instnews.net">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/logo-full-dark.svg">
+      <img src="assets/logo-full.svg" alt="InstNews" width="340">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <strong><a href="https://www.instnews.net">www.instnews.net</a></strong>
+  &nbsp;·&nbsp; <a href="https://www.instnews.net/docs">Docs</a>
+  &nbsp;·&nbsp; <a href="https://www.instnews.net/pricing">Pricing</a>
+  &nbsp;·&nbsp; <a href="https://www.instnews.net/openapi.json">OpenAPI</a>
 </p>
 
 # InstNews — real-time stock market news API
